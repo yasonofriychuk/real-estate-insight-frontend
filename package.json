@@ -1,38 +1,47 @@
 {
-  "name": "real-estate-insight-frontend",
+  "name": "mapbox-demo-realestate",
   "version": "0.1.0",
   "private": true,
-  "dependencies": {
-    "@testing-library/jest-dom": "^5.17.0",
-    "@testing-library/react": "^13.4.0",
-    "@testing-library/user-event": "^13.5.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-scripts": "5.0.1",
-    "web-vitals": "^2.1.4"
-  },
+  "homepage": "/",
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
+  "main": "src/index.js",
+  "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^6.5.2",
+    "@fortawesome/free-solid-svg-icons": "^6.5.2",
+    "@fortawesome/react-fontawesome": "^0.2.0",
+    "@mapbox/mapbox-gl-geocoder": "^5.0.2",
+    "@mapbox/mapbox-gl-language": "^1.0.1",
+    "@mapbox/search-js-react": "^1.0.0-beta.21",
+    "@turf/bbox": "^6.5.0",
+    "axios": "^1.9.0",
+    "classnames": "^2.5.1",
+    "lucide-react": "^0.511.0",
+    "mapbox-gl": "^3.12.0",
+    "mapbox-gl-geocoder": "^2.0.1",
+    "numeral": "^2.0.6",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-markdown": "^9.0.1",
+    "react-router-dom": "^6.23.0",
+    "react-tooltip": "^5.26.4"
   },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  }
+  "devDependencies": {
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@vitejs/plugin-react": "^4.2.1",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "vite": "^5.2.0"
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ]
 }
