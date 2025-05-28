@@ -1,13 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import classNames from "classnames";
 import { SearchBox } from "@mapbox/search-js-react";
 import mapboxgl from "mapbox-gl";
 
 import { useSearchParams } from "react-router-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMap, faList } from "@fortawesome/free-solid-svg-icons";
 
 import Map from "./component/Map/Map";
 import Card from "./component/Card/Card";
@@ -17,7 +14,11 @@ import RadiusSlider from "./component/InfraFilters/RadiusSlider";
 
 import housebuyLogo from "./img/housebuy-logo.svg";
 import { accessToken } from "./const/accessToken";
-import { searchDevelopments, fetchInfrastructureRadius } from "./api/api";
+import {
+  searchDevelopments,
+  fetchInfrastructureRadius,
+  buildRouteBetweenPoints,
+} from "./api/api";
 import FILTERS from "./component/InfraFilters/FiltersTypes";
 
 import "./styles.css";
@@ -28,9 +29,9 @@ export default function Home() {
   const [activeFeature, setActiveFeature] = useState();
   const [developmentId, setDevelopmentId] = useState();
   const [searchValue, setSearchValue] = useState("");
-  const [activeMobileView, setActiveMobileView] = useState("map");
   const [activeFilters, setActiveFilters] = useState(FILTERS.map((f) => f.id));
   const [radius, setRadius] = useState(3000);
+  const [routeData, setRouteData] = useState(null);
 
   // a ref to hold the Mapbox GL JS Map instance
   const mapInstanceRef = useRef();
@@ -80,6 +81,12 @@ export default function Home() {
     setDevelopmentId(feature.id);
   };
 
+  const handleInfraMarkerClick = async (infra) => {
+    if (!developmentId) return;
+    const result = await buildRouteBetweenPoints(developmentId, infra.id);
+    setRouteData(result);
+  };
+
   // when the modal is closed, clear the active feature
   const handleModalClose = () => {
     setActiveFeature(undefined);
@@ -88,11 +95,6 @@ export default function Home() {
   // set the search value as the user types
   const handleSearchChange = (newValue) => {
     setSearchValue(newValue);
-  };
-
-  // toggle the map and card view on mobile devices
-  const handleActiveMobileClick = () => {
-    setActiveMobileView((prev) => (prev === "map" ? "cards" : "map"));
   };
 
   useEffect(() => {
@@ -131,11 +133,7 @@ export default function Home() {
           </>
         )}
         <div className="relative lg:flex grow shrink min-h-0">
-          <div
-            className={classNames("grow shrink-0 relative h-full lg:h-auto", {
-              "z-30": activeMobileView === "map",
-            })}
-          >
+          <div className="grow shrink-0 relative h-full lg:h-auto">
             <div className="absolute top-3 left-3 z-10">
               <SearchBox
                 className="w-32"
@@ -149,8 +147,8 @@ export default function Home() {
                     "street",
                     "address",
                   ],
-                  language: 'ru',
-                  country: 'RU'
+                  language: "ru",
+                  country: "RU",
                 }}
                 value={searchValue}
                 onChange={handleSearchChange}
@@ -172,13 +170,16 @@ export default function Home() {
             <Map
               data={currentViewData}
               infrastructure={infrastructure}
+              routeGeoJSON={routeData}
               onBoundsChange={handleMapOnBoundsChange}
               onFeatureClick={handleFeatureClick}
               onMarkerFeatureClick={handleMarkerFeatureClick}
+              onInfraMarkerClick={handleInfraMarkerClick}
             ></Map>
           </div>
+
           {/* sidebar */}
-          <div className="absolute lg:static top-0 p-4 w-full lg:w-96 shadow-xl z-10 overflow-scroll lg:z-30 h-full lg:h-auto bg-white">
+          <div className="relative lg:static p-4 w-full max-w-full lg:max-w-96 shadow-xl z-10 overflow-y-auto h-full lg:h-auto bg-white">
             <div className="text-2xl text-black font-semibold w-full mb-1.5">
               Жилые комплексы в этой области
             </div>
@@ -201,8 +202,8 @@ export default function Home() {
         <div
           className="absolute bottom-4 z-40 flex items-center gap-6 p-3 rounded shadow-md"
           style={{
-            left: "calc(50% - 650px)", 
-            maxWidth: "100%", 
+            left: "calc(50% - 650px)",
+            maxWidth: "100%",
           }}
         >
           <InfraFilters
@@ -213,19 +214,6 @@ export default function Home() {
           <RadiusSlider radius={radius} onChange={setRadius} />
         </div>
       </main>
-
-      <div
-        className="absolute z-30 bottom-5 left-1/2 transform -translate-x-1/2 lg:hidden"
-        onClick={handleActiveMobileClick}
-      >
-        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-          <FontAwesomeIcon
-            icon={activeMobileView === "map" ? faList : faMap}
-            className="mr-2"
-          />
-          {activeMobileView === "map" ? "Cards" : "Map"}
-        </button>
-      </div>
     </>
   );
 }
