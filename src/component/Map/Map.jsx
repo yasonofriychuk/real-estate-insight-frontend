@@ -13,6 +13,7 @@ const Map = ({
   data,
   infrastructure,
   routeGeoJSON,
+  heatmapData,
   onBoundsChange,
   onFeatureClick,
   onMarkerFeatureClick,
@@ -59,89 +60,134 @@ const Map = ({
   }, []);
 
   useEffect(() => {
-    if (!mapRef.current || !mapLoaded || !routeGeoJSON) return;
+    if (!mapRef.current || !mapLoaded) return;
 
     const map = mapRef.current;
 
     // Удаляем предыдущий маршрут, если есть
-    if (map.getSource("route")) {
-      map.removeLayer("route");
-      map.removeSource("route");
-    }
-    if (map.getSource("route-label")) {
-      map.removeLayer("route-label");
-      map.removeSource("route-label");
-    }
-
-    // Добавляем новый маршрут
-    map.addSource("route", {
-      type: "geojson",
-      data: routeGeoJSON,
-    });
-
-    map.addLayer({
-      id: "route",
-      type: "line",
-      source: "route",
-      layout: {
-        "line-join": "round",
-        "line-cap": "round",
-      },
-      paint: {
-        "line-color": "#3b82f6",
-        "line-width": 4,
-      },
-    });
-
-    // ======= Добавляем подпись =======
-
-    const coordinates = routeGeoJSON.features[0]?.geometry?.coordinates;
-    const distance = routeGeoJSON.features[0]?.properties?.distance;
-
-    if (coordinates && coordinates.length > 1 && distance) {
-      const midIndex = Math.floor(coordinates.length / 2);
-      const midPoint = coordinates[midIndex];
-      
-      const labelGeoJSON = {
-        type: "FeatureCollection",
-        features: [
-          {
-            type: "Feature",
-            geometry: {
-              type: "Point",
-              coordinates: midPoint,
-            },
-            properties: {
-              text: distance,
-            },
-          },
-        ],
-      };
-
-      map.addSource("route-label", {
+    if (routeGeoJSON) {
+      if (map.getSource("route")) {
+        map.removeLayer("route");
+        map.removeSource("route");
+      }
+      if (map.getSource("route-label")) {
+        map.removeLayer("route-label");
+        map.removeSource("route-label");
+      }
+      // Добавляем новый маршрут
+      map.addSource("route", {
         type: "geojson",
-        data: labelGeoJSON,
+        data: routeGeoJSON,
       });
 
       map.addLayer({
-        id: "route-label",
-        type: "symbol",
-        source: "route-label",
+        id: "route",
+        type: "line",
+        source: "route",
         layout: {
-          "text-field": ["get", "text"],
-          "text-font": ["Open Sans Bold"],
-          "text-size": 14,
-          "text-rotate": ["get", "angle"],
-          "text-anchor": "center",
+          "line-join": "round",
+          "line-cap": "round",
         },
         paint: {
-          "text-color": "#1f2937",
-          "text-halo-color": "#ffffff",
-          "text-halo-width": 1.5,
+          "line-color": "#3b82f6",
+          "line-width": 4,
+        },
+      });
+      const coordinates = routeGeoJSON.features[0]?.geometry?.coordinates;
+      const distance = routeGeoJSON.features[0]?.properties?.distance;
+
+      if (coordinates && coordinates.length > 1 && distance) {
+        const midIndex = Math.floor(coordinates.length / 2);
+        const midPoint = coordinates[midIndex];
+
+        const labelGeoJSON = {
+          type: "FeatureCollection",
+          features: [
+            {
+              type: "Feature",
+              geometry: {
+                type: "Point",
+                coordinates: midPoint,
+              },
+              properties: {
+                text: distance,
+              },
+            },
+          ],
+        };
+
+        map.addSource("route-label", {
+          type: "geojson",
+          data: labelGeoJSON,
+        });
+
+        map.addLayer({
+          id: "route-label",
+          type: "symbol",
+          source: "route-label",
+          layout: {
+            "text-field": ["get", "text"],
+            "text-font": ["Open Sans Bold"],
+            "text-size": 14,
+            "text-rotate": ["get", "angle"],
+            "text-anchor": "center",
+          },
+          paint: {
+            "text-color": "#1f2937",
+            "text-halo-color": "#ffffff",
+            "text-halo-width": 1.5,
+          },
+        });
+      }
+    }
+
+    if (heatmapData) {
+      if (map.getSource("infra-heatmap")) {
+        map.removeLayer("infra-heatmap");
+        map.removeSource("infra-heatmap");
+      }
+
+      map.addSource("infra-heatmap", {
+        type: "geojson",
+        data: heatmapData,
+      });
+
+      map.addLayer({
+        id: "infra-heatmap",
+        type: "fill",
+        source: "infra-heatmap",
+        paint: {
+          "fill-color": [
+            "interpolate",
+            ["linear"],
+            ["get", "total_weight"],
+            0.0,
+            "#ffffff", // низкая насыщенность — белый
+            0.2,
+            "#dbe3f7", // светло-сиреневый
+            0.4,
+            "#a5b8e3", // небесно-синий
+            0.6,
+            "#5e81c5", // средне-синий
+            0.8,
+            "#3b4cc0", // насыщенно-синий
+            1.0,
+            "#2a1659", // тёмно-фиолетовый
+          ],
+          "fill-opacity": [
+            "interpolate",
+            ["linear"],
+            ["get", "total_weight"],
+            0.0,
+            0.0,
+            1.0,
+            0.7, // немного прозрачности, чтобы видеть карту под низом
+          ],
+          "fill-outline-color": "transparent", // убираем чёрные контуры, чтобы не выделялись полигоны
         },
       });
     }
-  }, [routeGeoJSON, mapLoaded]);
+  }, [routeGeoJSON, heatmapData, mapLoaded]);
 
   return (
     <>

@@ -4,26 +4,24 @@ import { useState, useRef, useEffect } from "react";
 import { SearchBox } from "@mapbox/search-js-react";
 import mapboxgl from "mapbox-gl";
 
-import { useSearchParams } from "react-router-dom";
+import Map from "../component/Map/Map";
+import Card from "../component/Card/Card";
+import Modal from "../component/Modal/Modal";
+import InfraFilters from "../component/InfraFilters/InfraFilters";
+import RadiusSlider from "../component/InfraFilters/RadiusSlider";
 
-import Map from "./component/Map/Map";
-import Card from "./component/Card/Card";
-import Modal from "./component/Modal/Modal";
-import InfraFilters from "./component/InfraFilters/InfraFilters";
-import RadiusSlider from "./component/InfraFilters/RadiusSlider";
-
-import housebuyLogo from "./img/housebuy-logo.svg";
-import { accessToken } from "./const/accessToken";
+import { accessToken } from "../const/accessToken";
 import {
   searchDevelopments,
   fetchInfrastructureRadius,
   buildRouteBetweenPoints,
-} from "./api/api";
-import FILTERS from "./component/InfraFilters/FiltersTypes";
+  fetchInfrastructureHeatmap,
+} from "../api/api";
+import FILTERS from "../component/InfraFilters/FiltersTypes";
 
-import "./styles.css";
+import "../styles.css";
 
-export default function Home() {
+const MapPage = () => {
   const [currentViewData, setCurrentViewData] = useState([]);
   const [infrastructure, setInfrastructure] = useState([]);
   const [activeFeature, setActiveFeature] = useState();
@@ -32,12 +30,10 @@ export default function Home() {
   const [activeFilters, setActiveFilters] = useState(FILTERS.map((f) => f.id));
   const [radius, setRadius] = useState(3000);
   const [routeData, setRouteData] = useState(null);
+  const [heatmapData, setHeatmapData] = useState(null);
 
   // a ref to hold the Mapbox GL JS Map instance
   const mapInstanceRef = useRef();
-
-  const [searchParams] = useSearchParams();
-  const hideHeaders = searchParams.get("hideHeaders");
 
   // when the map loads
   const handleMapOnBoundsChange = async (map) => {
@@ -62,6 +58,24 @@ export default function Home() {
       setCurrentViewData(result.developments);
     } catch (err) {
       console.error("Ошибка при получении ЖК:", err.message);
+    }
+
+    try {
+      const rawFeatures = await fetchInfrastructureHeatmap({
+        bbox: { topLeftLat, topLeftLon, bottomRightLat, bottomRightLon },
+      });
+      setHeatmapData({
+        type: "FeatureCollection",
+        features: rawFeatures.map((item) => ({
+          type: "Feature",
+          geometry: item.geometry,
+          properties: {
+            total_weight: item.total_weight,
+          },
+        })),
+      });
+    } catch (err) {
+      console.error("Ошибка при получении тепловой карты:", err.message);
     }
   };
 
@@ -118,20 +132,6 @@ export default function Home() {
         <Modal feature={activeFeature} onClose={handleModalClose} />
       )}
       <main className="flex flex-col h-full">
-        {!hideHeaders && (
-          <>
-            <div className="flex shrink-0 justify-center h-16 items-center border-b border-gray-200 ">
-              <div
-                className="bg-contain bg-center bg-no-repeat"
-                style={{
-                  height: 30,
-                  width: 165,
-                  backgroundImage: `url(${housebuyLogo})`,
-                }}
-              ></div>
-            </div>
-          </>
-        )}
         <div className="relative lg:flex grow shrink min-h-0">
           <div className="grow shrink-0 relative h-full lg:h-auto">
             <div className="absolute top-3 left-3 z-10">
@@ -171,6 +171,7 @@ export default function Home() {
               data={currentViewData}
               infrastructure={infrastructure}
               routeGeoJSON={routeData}
+              heatmapData={heatmapData}
               onBoundsChange={handleMapOnBoundsChange}
               onFeatureClick={handleFeatureClick}
               onMarkerFeatureClick={handleMarkerFeatureClick}
@@ -216,4 +217,6 @@ export default function Home() {
       </main>
     </>
   );
-}
+};
+
+export default MapPage;

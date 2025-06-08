@@ -1,4 +1,5 @@
 import classNames from 'classnames'
+import FavoriteIcon from '../FavoriteIcon/FavoriteIcon'
 
 const MarkerIcon = () => (
   <svg
@@ -57,27 +58,30 @@ const Card = ({ feature, width = 'auto', shortImage = false, onClick }) => {
     onClick(feature)
   }
 
-  const { imageUrl } = feature
+  const { imageUrl, isFavorite } = feature
 
   return (
     <div className='cursor-pointer' onClick={handleClick}>
       <div
-        className='bg-white border border-gray-200 rounded-2xl '
+        className='bg-white border border-gray-200 rounded-2xl relative'
         style={{
           width,
           boxShadow: '0px 2px 8px 0px rgba(0, 0, 0, 0.15)'
         }}
       >
         <div
-          className={classNames('bg-cover  m-1.5', {
+          className={classNames('bg-cover m-1.5 relative', {
             'h-44': shortImage,
             'h-52': !shortImage
           })}
           style={{
             backgroundImage: `url("${imageUrl}")`,
-            borderRadius: 11.28
+            borderRadius: 11.28,
+            position: 'relative',
           }}
-        ></div>
+        >
+          <FavoriteIcon initialFavorite={isFavorite} />
+        </div>
         <PropertyData feature={feature} />
       </div>
     </div>

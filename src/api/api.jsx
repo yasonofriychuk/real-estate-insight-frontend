@@ -1,8 +1,22 @@
 // apiClient.js
 import axios from 'axios';
 
-const BASE_URL = 'http://127.0.0.1:5001/api/v1';
-const api = axios.create({ baseURL: BASE_URL });
+const api = axios.create(
+  { baseURL: 'http://127.0.0.1:5001/api/v1' }
+);
+
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // Infrastructure: Get objects around a development
 export async function fetchInfrastructureRadius(developmentId, radius) {
@@ -57,6 +71,46 @@ export async function buildRouteBetweenPoints(developmentId, osmId) {
       params: { developmentId, osmId },
     });
     return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+}
+
+export async function fetchInfrastructureHeatmap({ bbox }) {
+  const {
+    topLeftLat,
+    topLeftLon,
+    bottomRightLat,
+    bottomRightLon,
+  } = bbox;
+
+  // Валидация координат
+  if (!topLeftLat || !topLeftLon || !bottomRightLat || !bottomRightLon) {
+    throw new Error('Bounding box coordinates are required.');
+  }
+
+  const payload = {
+    bbox: {
+      topLeftLat,
+      topLeftLon,
+      bottomRightLat,
+      bottomRightLon,
+    },
+  };
+
+  try {
+    const response = await api.post('/infrastructure/heatmap', payload);
+    return response.data; // should be an array of { geometry, total_weight }
+  } catch (error) {
+    handleApiError(error);
+  }
+}
+
+export async function loginUser(email, password) {
+  try {
+    const response = await api.post('/profile/login', { email, password });
+    const { token, profile_id } = response.data;
+    return { token, profile_id };
   } catch (error) {
     handleApiError(error);
   }
