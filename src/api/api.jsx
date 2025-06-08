@@ -1,9 +1,9 @@
 // apiClient.js
 import axios from 'axios';
 
-const api = axios.create(
-  { baseURL: 'http://127.0.0.1:5001/api/v1' }
-);
+const api = axios.create({
+  baseURL: 'http://127.0.0.1:5001/api/v1',
+});
 
 api.interceptors.request.use(
   (config) => {
@@ -13,9 +13,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Infrastructure: Get objects around a development
@@ -34,21 +32,21 @@ export async function fetchInfrastructureRadius(developmentId, radius) {
   }
 }
 
-// Developments: Filtered search
-export async function searchDevelopments({
-  board: {
+// Infrastructure: Heatmap
+export async function fetchInfrastructureHeatmap({ bbox }) {
+  const {
     topLeftLat,
     topLeftLon,
     bottomRightLat,
     bottomRightLon,
-  },
-}) {
+  } = bbox;
+
   if (!topLeftLat || !topLeftLon || !bottomRightLat || !bottomRightLon) {
-    throw new Error('Board coordinates are required.');
+    throw new Error('Bounding box coordinates are required.');
   }
 
   const payload = {
-    board: {
+    bbox: {
       topLeftLat,
       topLeftLon,
       bottomRightLat,
@@ -56,6 +54,22 @@ export async function searchDevelopments({
     },
   };
 
+  try {
+    const response = await api.post('/infrastructure/heatmap', payload);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+}
+
+// Developments: Filtered search
+export async function searchDevelopments({ board }) {
+  const { topLeftLat, topLeftLon, bottomRightLat, bottomRightLon } = board;
+  if (!topLeftLat || !topLeftLon || !bottomRightLat || !bottomRightLon) {
+    throw new Error('Board coordinates are required.');
+  }
+
+  const payload = { board };
   try {
     const response = await api.post('/developments/search/filter', payload);
     return response.data;
@@ -76,41 +90,82 @@ export async function buildRouteBetweenPoints(developmentId, osmId) {
   }
 }
 
-export async function fetchInfrastructureHeatmap({ bbox }) {
-  const {
-    topLeftLat,
-    topLeftLon,
-    bottomRightLat,
-    bottomRightLon,
-  } = bbox;
-
-  // Валидация координат
-  if (!topLeftLat || !topLeftLon || !bottomRightLat || !bottomRightLon) {
-    throw new Error('Bounding box coordinates are required.');
-  }
-
-  const payload = {
-    bbox: {
-      topLeftLat,
-      topLeftLon,
-      bottomRightLat,
-      bottomRightLon,
-    },
-  };
-
-  try {
-    const response = await api.post('/infrastructure/heatmap', payload);
-    return response.data; // should be an array of { geometry, total_weight }
-  } catch (error) {
-    handleApiError(error);
-  }
-}
-
+// Auth: Login
 export async function loginUser(email, password) {
   try {
     const response = await api.post('/profile/login', { email, password });
     const { token, profile_id } = response.data;
     return { token, profile_id };
+  } catch (error) {
+    handleApiError(error);
+  }
+}
+
+// Selections: List
+export async function fetchSelections() {
+  try {
+    const response = await api.get('/selection/list');
+    return response.data.selections;
+  } catch (error) {
+    handleApiError(error);
+  }
+}
+
+// Selections: Create
+export async function createSelection({ name, comment, form }) {
+  try {
+    const response = await api.post('/selection/create', { name, comment, form });
+    return response.data.selectionId;
+  } catch (error) {
+    handleApiError(error);
+  }
+}
+
+// Selections: Delete
+export async function deleteSelection(selectionId) {
+  try {
+    const response = await api.post('/selection/delete', null, {
+      params: { id: selectionId },
+    });
+    return response.data.status;
+  } catch (error) {
+    handleApiError(error);
+  }
+}
+
+// Selections: Edit
+export async function editSelection({ selectionId, name, comment, form }) {
+  try {
+    const response = await api.post('/selection/edit', {
+      selectionId,
+      name,
+      comment,
+      form,
+    });
+    return response.data.status;
+  } catch (error) {
+    handleApiError(error);
+  }
+}
+
+// Selections: Favorite (Add/Remove development)
+export async function toggleFavoriteSelection(selection_id, development_id) {
+  try {
+    const response = await api.post('/selection/favorite', {
+      selection_id,
+      development_id,
+    });
+    return response.data.status;
+  } catch (error) {
+    handleApiError(error);
+  }
+}
+
+// Locations: List
+export async function fetchLocationList() {
+  try {
+    const response = await api.get('/location/list');
+    return response.data.locations;
   } catch (error) {
     handleApiError(error);
   }
