@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { SearchBox } from "@mapbox/search-js-react";
+import { useLocation } from "react-router-dom";
 import mapboxgl from "mapbox-gl";
 
 import Map from "../component/Map/Map";
@@ -31,9 +32,10 @@ const MapPage = () => {
   const [radius, setRadius] = useState(3000);
   const [routeData, setRouteData] = useState(null);
   const [heatmapData, setHeatmapData] = useState(null);
+  const location = useLocation();
 
-  // a ref to hold the Mapbox GL JS Map instance
   const mapInstanceRef = useRef();
+  const selectionId = new URLSearchParams(location.search).get("selectionId");
 
   // when the map loads
   const handleMapOnBoundsChange = async (map) => {
@@ -54,6 +56,7 @@ const MapPage = () => {
           bottomRightLat,
           bottomRightLon,
         },
+        selectionId,
       });
       setCurrentViewData(result.developments);
     } catch (err) {

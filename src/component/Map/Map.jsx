@@ -174,16 +174,8 @@ const Map = ({
             1.0,
             "#2a1659", // тёмно-фиолетовый
           ],
-          "fill-opacity": [
-            "interpolate",
-            ["linear"],
-            ["get", "total_weight"],
-            0.0,
-            0.0,
-            1.0,
-            0.7, // немного прозрачности, чтобы видеть карту под низом
-          ],
-          "fill-outline-color": "transparent", // убираем чёрные контуры, чтобы не выделялись полигоны
+          'fill-opacity': 0.5,
+          "fill-outline-color": "rgba(0, 0, 0, 0.5)",
         },
       });
     }

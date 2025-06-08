@@ -1,4 +1,3 @@
-// apiClient.js
 import axios from 'axios';
 
 const api = axios.create({
@@ -63,15 +62,29 @@ export async function fetchInfrastructureHeatmap({ bbox }) {
 }
 
 // Developments: Filtered search
-export async function searchDevelopments({ board }) {
+export async function searchDevelopments({ board, selectionId, searchQuery }) {
   const { topLeftLat, topLeftLon, bottomRightLat, bottomRightLon } = board;
   if (!topLeftLat || !topLeftLon || !bottomRightLat || !bottomRightLon) {
     throw new Error('Board coordinates are required.');
   }
 
-  const payload = { board };
+  const payload = { board, selectionId, searchQuery };
   try {
-    const response = await api.post('/developments/search/filter', payload);
+    const response = await api.post('/developments/search', payload);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+}
+
+// Получение подборки по selectionId
+export async function getSelectionById(selectionId) {
+  if (!selectionId) {
+    throw new Error('selectionId is required.');
+  }
+
+  try {
+    const response = await api.get(`/selection/${selectionId}`);
     return response.data;
   } catch (error) {
     handleApiError(error);
@@ -149,11 +162,12 @@ export async function editSelection({ selectionId, name, comment, form }) {
 }
 
 // Selections: Favorite (Add/Remove development)
-export async function toggleFavoriteSelection(selection_id, development_id) {
+export async function toggleFavoriteSelection(selection_id, development_id, value) {
   try {
     const response = await api.post('/selection/favorite', {
       selection_id,
       development_id,
+      value
     });
     return response.data.status;
   } catch (error) {
