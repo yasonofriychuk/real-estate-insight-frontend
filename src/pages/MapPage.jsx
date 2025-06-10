@@ -26,12 +26,13 @@ const MapPage = () => {
   const [currentViewData, setCurrentViewData] = useState([]);
   const [infrastructure, setInfrastructure] = useState([]);
   const [activeFeature, setActiveFeature] = useState();
-  const [developmentId, setDevelopmentId] = useState();
+  const [selectedDevelopment, setSelectedDevelopment] = useState(null);
   const [searchValue, setSearchValue] = useState("");
   const [activeFilters, setActiveFilters] = useState(FILTERS.map((f) => f.id));
   const [radius, setRadius] = useState(3000);
   const [routeData, setRouteData] = useState(null);
   const [heatmapData, setHeatmapData] = useState(null);
+  const [isHeatmapVisible, setHeatmapVisible] = useState(true);
   const location = useLocation();
 
   const mapInstanceRef = useRef();
@@ -95,13 +96,27 @@ const MapPage = () => {
   };
 
   const handleMarkerFeatureClick = (feature) => {
-    setDevelopmentId(feature.id);
+    setSelectedDevelopment(feature);
+    setRouteData(null); // Сбросить маршрут при выборе нового ЖК
   };
 
   const handleInfraMarkerClick = async (infra) => {
-    if (!developmentId) return;
-    const result = await buildRouteBetweenPoints(developmentId, infra.id);
+    if (!selectedDevelopment) return;
+    const result = await buildRouteBetweenPoints(
+      selectedDevelopment.id,
+      infra.id
+    );
     setRouteData(result);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedDevelopment(null);
+    setInfrastructure([]);
+    setRouteData(null);
+  };
+
+  const toggleHeatmap = () => {
+    setHeatmapVisible((prev) => !prev);
   };
 
   // when the modal is closed, clear the active feature
@@ -115,10 +130,16 @@ const MapPage = () => {
   };
 
   useEffect(() => {
-    if (!developmentId) return;
+    if (!selectedDevelopment) {
+      setInfrastructure([]); // Очистить инфраструктуру, если ЖК не выбран
+      return;
+    }
     async function loadData() {
       try {
-        const data = await fetchInfrastructureRadius(developmentId, radius);
+        const data = await fetchInfrastructureRadius(
+          selectedDevelopment.id,
+          radius
+        );
         setInfrastructure(
           data.filter((d) => activeFilters.includes(d.objType))
         );
@@ -127,7 +148,7 @@ const MapPage = () => {
       }
     }
     loadData();
-  }, [activeFilters, radius, developmentId]);
+  }, [activeFilters, radius, selectedDevelopment]);
 
   return (
     <>
@@ -170,15 +191,61 @@ const MapPage = () => {
                 }}
               />
             </div>
+            {/* Custom map controls */}
+            <div className="absolute top-[98px] right-[10px] z-10">
+              <div className="bg-white rounded shadow-md flex flex-col">
+                <button
+                  onClick={toggleHeatmap}
+                  className={`w-[30px] h-[30px] flex items-center justify-center hover:bg-gray-100 ${
+                    isHeatmapVisible ? "text-blue-600" : "text-gray-500"
+                  } ${!selectedDevelopment ? "rounded" : "rounded-t"}`}
+                  title="Показать/скрыть тепловую карту"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path d="M12.0001 1.62329L4.16748 6.10303V15.0625L12.0001 19.5422L19.8327 15.0625V6.10303L12.0001 1.62329Z"></path>
+                  </svg>
+                </button>
+                {selectedDevelopment && (
+                  <button
+                    onClick={handleClearSelection}
+                    className="w-[30px] h-[30px] flex items-center justify-center rounded-b hover:bg-gray-100 text-gray-700 border-t border-gray-200"
+                    title="Очистить выбор"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
             <Map
               data={currentViewData}
               infrastructure={infrastructure}
               routeGeoJSON={routeData}
-              heatmapData={heatmapData}
+              heatmapData={isHeatmapVisible ? heatmapData : null}
               onBoundsChange={handleMapOnBoundsChange}
               onFeatureClick={handleFeatureClick}
               onMarkerFeatureClick={handleMarkerFeatureClick}
               onInfraMarkerClick={handleInfraMarkerClick}
+              selectedDevelopment={selectedDevelopment}
+              radius={radius}
             ></Map>
           </div>
 
@@ -203,20 +270,22 @@ const MapPage = () => {
           {/* end sidebar */}
         </div>
 
-        <div
-          className="absolute bottom-4 z-40 flex items-center gap-6 p-3 rounded shadow-md"
-          style={{
-            left: "calc(50% - 650px)",
-            maxWidth: "100%",
-          }}
-        >
-          <InfraFilters
-            filters={FILTERS}
-            activeFilters={activeFilters}
-            onToggle={toggleFilter}
-          />
-          <RadiusSlider radius={radius} onChange={setRadius} />
-        </div>
+        {selectedDevelopment && (
+          <div
+            className="absolute bottom-4 z-40 flex items-center gap-6 p-3 rounded shadow-md"
+            style={{
+              left: "calc(50% - 650px)",
+              maxWidth: "100%",
+            }}
+          >
+            <InfraFilters
+              filters={FILTERS}
+              activeFilters={activeFilters}
+              onToggle={toggleFilter}
+            />
+            <RadiusSlider radius={radius} onChange={setRadius} />
+          </div>
+        )}
       </main>
     </>
   );

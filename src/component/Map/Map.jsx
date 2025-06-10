@@ -9,6 +9,36 @@ import Card from "../Card/Card";
 import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
 
+// Helper function to create a GeoJSON circle
+const createGeoJSONCircle = (center, radiusInM, points = 64) => {
+  const km = radiusInM / 1000;
+  const ret = [];
+  const distanceX = km / (111.32 * Math.cos((center.lat * Math.PI) / 180));
+  const distanceY = km / 110.574;
+
+  for (let i = 0; i < points; i++) {
+    const theta = (i / points) * (2 * Math.PI);
+    const x = distanceX * Math.cos(theta) / 2;
+    const y = distanceY * Math.sin(theta) / 2;
+
+    ret.push([center.lon + x, center.lat + y]);
+  }
+  ret.push(ret[0]);
+
+  return {
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          coordinates: [ret],
+        },
+      },
+    ],
+  };
+};
+
 const Map = ({
   data,
   infrastructure,
@@ -18,6 +48,8 @@ const Map = ({
   onFeatureClick,
   onMarkerFeatureClick,
   onInfraMarkerClick,
+  selectedDevelopment,
+  radius,
 }) => {
   const mapRef = useRef();
   const mapContainerRef = useRef();
@@ -64,17 +96,20 @@ const Map = ({
 
     const map = mapRef.current;
 
-    // Удаляем предыдущий маршрут, если есть
+    const cleanupRoute = () => {
+      if (map.getLayer("route")) map.removeLayer("route");
+      if (map.getSource("route")) map.removeSource("route");
+      if (map.getLayer("route-label")) map.removeLayer("route-label");
+      if (map.getSource("route-label")) map.removeSource("route-label");
+    };
+
+    const cleanupHeatmap = () => {
+      if (map.getLayer("infra-heatmap")) map.removeLayer("infra-heatmap");
+      if (map.getSource("infra-heatmap")) map.removeSource("infra-heatmap");
+    };
+
+    cleanupRoute();
     if (routeGeoJSON) {
-      if (map.getSource("route")) {
-        map.removeLayer("route");
-        map.removeSource("route");
-      }
-      if (map.getSource("route-label")) {
-        map.removeLayer("route-label");
-        map.removeSource("route-label");
-      }
-      // Добавляем новый маршрут
       map.addSource("route", {
         type: "geojson",
         data: routeGeoJSON,
@@ -141,12 +176,8 @@ const Map = ({
       }
     }
 
+    cleanupHeatmap();
     if (heatmapData) {
-      if (map.getSource("infra-heatmap")) {
-        map.removeLayer("infra-heatmap");
-        map.removeSource("infra-heatmap");
-      }
-
       map.addSource("infra-heatmap", {
         type: "geojson",
         data: heatmapData,
@@ -174,12 +205,61 @@ const Map = ({
             1.0,
             "#2a1659", // тёмно-фиолетовый
           ],
-          'fill-opacity': 0.5,
+          "fill-opacity": 0.5,
           "fill-outline-color": "rgba(0, 0, 0, 0.5)",
         },
       });
     }
   }, [routeGeoJSON, heatmapData, mapLoaded]);
+
+  useEffect(() => {
+    if (!mapRef.current || !mapLoaded) return;
+    const map = mapRef.current;
+
+    const sourceId = "radius-circle";
+    const fillLayerId = "radius-circle-fill";
+    const lineLayerId = "radius-circle-line";
+
+    const cleanupCircle = () => {
+      if (map.getLayer(fillLayerId)) map.removeLayer(fillLayerId);
+      if (map.getLayer(lineLayerId)) map.removeLayer(lineLayerId);
+      if (map.getSource(sourceId)) map.removeSource(sourceId);
+    };
+
+    cleanupCircle();
+    console.log(selectedDevelopment);
+
+    if (selectedDevelopment && selectedDevelopment.coords && radius > 0) {
+      const center = selectedDevelopment.coords;
+      const circleGeoJSON = createGeoJSONCircle(center, radius);
+
+      map.addSource(sourceId, {
+        type: "geojson",
+        data: circleGeoJSON,
+      });
+
+      map.addLayer({
+        id: fillLayerId,
+        type: "fill",
+        source: sourceId,
+        paint: {
+          "fill-color": "#3b82f6",
+          "fill-opacity": 0.1,
+        },
+      });
+
+      map.addLayer({
+        id: lineLayerId,
+        type: "line",
+        source: sourceId,
+        paint: {
+          "line-color": "#3b82f6",
+          "line-width": 2,
+          "line-dasharray": [2, 2],
+        },
+      });
+    }
+  }, [selectedDevelopment, radius, mapLoaded]);
 
   return (
     <>
