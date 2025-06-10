@@ -38,14 +38,6 @@ export default function App() {
               }
             />
             <Route
-              path="map"
-              element={
-                <ProtectedRoute>
-                  <MapPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="selection/:selectionId"
               element={
                 <ProtectedRoute>
@@ -56,6 +48,14 @@ export default function App() {
             <Route path="login" element={<LoginPage />} />
             <Route path="*" element={<NoPage />} />
           </Route>
+          <Route
+            path="map"
+            element={
+              <ProtectedRoute>
+                <MapPage />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </React.StrictMode>

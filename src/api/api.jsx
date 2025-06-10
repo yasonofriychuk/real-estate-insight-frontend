@@ -32,7 +32,7 @@ export async function fetchInfrastructureRadius(developmentId, radius) {
 }
 
 // Infrastructure: Heatmap
-export async function fetchInfrastructureHeatmap({ bbox }) {
+export async function fetchInfrastructureHeatmap({ bbox, selectionId }) {
   const {
     topLeftLat,
     topLeftLon,
@@ -51,6 +51,7 @@ export async function fetchInfrastructureHeatmap({ bbox }) {
       bottomRightLat,
       bottomRightLon,
     },
+    selectionId: selectionId,
   };
 
   try {

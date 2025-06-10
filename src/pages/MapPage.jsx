@@ -2,8 +2,10 @@
 
 import { useState, useRef, useEffect } from "react";
 import { SearchBox } from "@mapbox/search-js-react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom"; // Добавлен Link
 import mapboxgl from "mapbox-gl";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"; // Добавлен FontAwesome
+import { faArrowLeft } from "@fortawesome/free-solid-svg-icons"; // Добавлена иконка
 
 import Map from "../component/Map/Map";
 import Card from "../component/Card/Card";
@@ -67,6 +69,7 @@ const MapPage = () => {
     try {
       const rawFeatures = await fetchInfrastructureHeatmap({
         bbox: { topLeftLat, topLeftLon, bottomRightLat, bottomRightLon },
+        selectionId,
       });
       setHeatmapData({
         type: "FeatureCollection",
@@ -250,22 +253,39 @@ const MapPage = () => {
           </div>
 
           {/* sidebar */}
-          <div className="relative lg:static p-4 w-full max-w-full lg:max-w-96 shadow-xl z-10 overflow-y-auto h-full lg:h-auto bg-white">
-            <div className="text-2xl text-black font-semibold w-full mb-1.5">
-              Жилые комплексы в этой области
-            </div>
-            <div className="mb-4">
-              <div className="font-medium text-gray-500">
-                {currentViewData.length} ЖК
+          {/* Изменена структура сайдбара для добавления фиксированной кнопки внизу */}
+          <div className="relative lg:static w-full max-w-full lg:max-w-96 shadow-xl z-10 h-full lg:h-auto bg-white flex flex-col">
+            {/* Прокручиваемая область */}
+            <div className="p-4 overflow-y-auto grow">
+              <div className="text-2xl text-black font-semibold w-full mb-1.5">
+                Жилые комплексы в этой области
+              </div>
+              <div className="mb-4">
+                <div className="font-medium text-gray-500">
+                  {currentViewData.length} ЖК
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+                {currentViewData.map((feature, i) => (
+                  <div key={feature.id} className="mb-1.5">
+                    <Card feature={feature} onClick={handleFeatureClick} />
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-              {currentViewData.map((feature, i) => (
-                <div key={i} className="mb-1.5">
-                  <Card feature={feature} onClick={handleFeatureClick} />
-                </div>
-              ))}
-            </div>
+
+            {/* Блок с кнопкой, отображается только если есть selectionId */}
+            {selectionId && (
+              <div className="p-4 border-t border-gray-200 shrink-0">
+                <Link
+                  to={`/selection/${selectionId}`}
+                  className="flex items-center justify-center w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors text-center"
+                >
+                  <FontAwesomeIcon icon={faArrowLeft} className="mr-3" />
+                  Вернуться к подборке
+                </Link>
+              </div>
+            )}
           </div>
           {/* end sidebar */}
         </div>

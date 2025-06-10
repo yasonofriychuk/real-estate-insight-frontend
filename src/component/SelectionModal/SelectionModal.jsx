@@ -95,7 +95,7 @@ const SelectionModal = ({ initialData, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg w-full max-w-lg shadow-xl">
+      <div className="bg-white p-7 rounded-lg w-full max-w-2xl shadow-xl">
         <h2 className="text-xl font-semibold mb-4">
           {initialData.selectionId
             ? "Редактировать подборку"
@@ -173,7 +173,7 @@ const SelectionModal = ({ initialData, onClose, onSave }) => {
               <div key={key}>
                 <label className="text-sm block mb-1">{label}</label>
                 <div className="flex gap-1">
-                  {Array.from({ length: 10 }, (_, i) => i + 1).map((v) => (
+                  {Array.from({ length: 11 }, (_, i) => i).map((v) => (
                     <button
                       key={v}
                       type="button"
